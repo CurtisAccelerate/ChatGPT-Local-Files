@@ -43,7 +43,7 @@ ChatGPT-Local-Files/
 ├── content.js                   # Injected button logic
 ├── background.js                # Messaging bridge
 
-chatgpt-localserver/
+chatgpt-Local-Files-Server/
 ├── server.py                    # Flask server entry
 ├── routes.py                    # Request handling logic
 ├── requirements.txt             # Dependencies
