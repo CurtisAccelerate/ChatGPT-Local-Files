@@ -153,13 +153,6 @@ print("π =", math.pi)
 
 ---
 
-### ❌ Python – Broken (Missing colon)
-
-```python
-# path: NewProject01/scripts/broken.py
-def greet(name)
-    print("Hello", name)
-```
 
 ---
 
@@ -172,7 +165,7 @@ console.log("Hello from JS!");
 
 ---
 
-### ✅ C# – Working
+### ✅ C# – Working You can use the project tab to execute C# using dotnet!! 
 
 ```csharp
 // path: NewProject01/MyApp/Program.cs
