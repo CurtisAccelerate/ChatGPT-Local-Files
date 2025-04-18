@@ -67,6 +67,9 @@ This tool bridges ChatGPT with your local file system and terminal:
 
 ## ⚙️ Technical Details
 
+### Platforms:
+Supported/Tested Windows Only
+
 ### Architecture
 
 - **content.js**: Injects UI into ChatGPT
