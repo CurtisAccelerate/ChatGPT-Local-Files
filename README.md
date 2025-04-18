@@ -136,7 +136,7 @@ This tells the extension where to save the file, relative to `Work/`.
 
 Never use Canvas.
 
-📁 **Working path:** `Work/NewProject01/`
+📁 **Working path:** `YourPathHere'
 
 ---
 
