@@ -92,7 +92,7 @@ Supported/Tested Windows Only
 - `Save ↗`: Write file to disk
 - `Run ▶`: Execute code via agent
 - `Exec`: Run PowerShell directly
-- `Rrfsh`: Reload file into code block (syncs from disk based on `path:` comment)
+- `Rrfsh`: Reload file from code block, if code block not complete mutex could fail
 - `Notepad`: Open file in Notepad
 - `VStudio`: Open file in VS Code
 
