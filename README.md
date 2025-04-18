@@ -14,15 +14,15 @@ A browser extension that empowers ChatGPT with true local project management: sa
 
 ```bash
 git clone https://github.com/CurtisAccelerate/ChatGPT-Local-Files.git
-cd ChatGPT-Local-Files/chatgpt-localserver
+cd ChatGPT-Local-Files/ChatGPT-Local-Files-Server
 pip install -r requirements.txt
-python server.py
+python chatgpt-local-server.py
 ```
 
 > The server will start at: `http://127.0.0.1:5000`
 
 📂 **All code is saved relative to this folder:**  
-`ChatGPT-Local-Files/chatgpt-localserver/Work/`
+`ChatGPT-Local-Files-Server/Work/`
 
 ---
 
