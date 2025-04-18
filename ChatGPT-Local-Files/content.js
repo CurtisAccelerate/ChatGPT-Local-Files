@@ -31,11 +31,15 @@
 
   // ── Prefix join (always enforce for relative paths) ──
   function joinPrefix(pfx, p) {
-    const normPfx = pfx.replace(/[\\/]+$/, '');
-    if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p; // absolute
-    let norm = p.replace(/^[\\/]+/, '');
+    // normalize prefix separators and drop trailing slashes
+    let normPfx = pfx.replace(/[\\/]+$/, '').replace(/\\/g, '/');
+    // absolute paths stay untouched
+    if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
+    // normalize candidate path separators and drop leading slashes
+    let norm = p.replace(/^[\\/]+/, '').replace(/\\/g, '/');
+    // remove existing prefix if present
     const esc = normPfx.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-    norm = norm.replace(new RegExp('^' + esc + '[\\/]+'), '');
+    norm = norm.replace(new RegExp('^' + esc + '/+'), '');
     return `${normPfx}/${norm}`;
   }
 
@@ -352,11 +356,11 @@
     };
     btnRrf.onclick = e => {
       e.stopPropagation();
-      prefixPath = '';
-      localStorage.removeItem('cb_save_prefix');
+      // just refresh the input with the normalized path, keep prefix intact
       const fresh = extractPath();
-      input.value = fresh || '';
-      toast('🔄 Prefix cleared and path refreshed');
+      const newPath = fresh ? (prefixPath ? joinPrefix(prefixPath, fresh) : fresh) : '';
+      input.value = newPath;
+      toast('🔄 Path refreshed');
     };
     btnNote.onclick = e => {
       e.stopPropagation();
