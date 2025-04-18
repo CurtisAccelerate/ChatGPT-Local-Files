@@ -134,6 +134,8 @@ This tells the extension where to save the file, relative to `Work/`.
 - `#` for Python, Shell, Ruby
 - `<!-- -->` for HTML, XML
 
+Never use Canvas.
+
 📁 **Working path:** `Work/NewProject01/`
 
 ---
