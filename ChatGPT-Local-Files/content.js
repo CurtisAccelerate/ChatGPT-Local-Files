@@ -29,12 +29,14 @@
     setTimeout(() => d.remove(), 1500);
   };
 
+  // ── Prefix join (always enforce for relative paths) ──
   function joinPrefix(pfx, p) {
     const normPfx = pfx.replace(/[\\/]+$/, '');
-    const normP = p.replace(/^[\\/]+/, '');
-    if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
-    if (normP.startsWith(normPfx + '/')) return p;
-    return `${normPfx}/${normP}`;
+    if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p; // absolute
+    let norm = p.replace(/^[\\/]+/, '');
+    const esc = normPfx.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    norm = norm.replace(new RegExp('^' + esc + '[\\/]+'), '');
+    return `${normPfx}/${norm}`;
   }
 
   function getComposer() {
@@ -320,13 +322,19 @@
       e.stopPropagation();
       let path = input.value.trim() || prompt('Enter save path:');
       if (!path) return;
-      if (prefixPath) path = joinPrefix(prefixPath, path);
+      path = prefixPath ? joinPrefix(prefixPath, path) : path;
       input.value = path;
       saveCode(codeEl.textContent, path);
     };
     btnRun.onclick = e => {
       e.stopPropagation();
-      const cmd = inferCommand(input.value.trim());
+      const raw = extractPath();
+      if (!raw) {
+        toast('No path to run', '#ef4444');
+        return;
+      }
+      const full = prefixPath ? joinPrefix(prefixPath, raw) : raw;
+      const cmd = inferCommand(full);
       input.value = cmd;
       cmdHistory = [cmd, ...cmdHistory.filter(x => x !== cmd)];
       localStorage.setItem('cb_cmd_history', JSON.stringify(cmdHistory));
@@ -367,7 +375,7 @@
   function inferCommand(path) {
     let cmdPath = path;
     if (prefixPath) {
-      const pfx = prefixPath.replace(/\/+$/,'') + '/';
+      const pfx = prefixPath.replace(/\/+$/, '') + '/';
       if (cmdPath.startsWith(pfx)) cmdPath = cmdPath.slice(pfx.length);
     }
     const ext = cmdPath.split('.').pop().toLowerCase();
@@ -375,7 +383,7 @@
       case 'py':  return `python "${cmdPath}"`;
       case 'js':  return `node "${cmdPath}"`;
       case 'ps1': return `powershell -ExecutionPolicy Bypass -File "${cmdPath}"`;
-      case 'cs':  return `dotnet run --project "${cmdPath.replace(/\\[^\\]+$/,'')}"`;
+      case 'cs':  return `dotnet run --project "${cmdPath.replace(/\\[^\\]+$/, '')}"`;
       default:    return `"${cmdPath}"`;
     }
   }
