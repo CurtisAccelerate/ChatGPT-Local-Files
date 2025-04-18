@@ -189,7 +189,7 @@ class Program {
 
 ## 📝 Knonwn bugs / To Be Fixed
 
-- [ ] Changing the save bath and press enter should save file.
+- [ ] Changing the save path and press enter should save file with updated path.
 
 ---
 
