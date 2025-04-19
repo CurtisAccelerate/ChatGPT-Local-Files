@@ -197,7 +197,7 @@ class Program {
 
 - [ ] Add support for ChatGPT **Canvas** block content
 
-## 📝 Knonwn bugs / To Be Fixed
+## 📝 Known bugs / To Be Fixed
 
 
 ---
