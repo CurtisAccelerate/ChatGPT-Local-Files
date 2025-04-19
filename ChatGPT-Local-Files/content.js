@@ -36,13 +36,9 @@
 
   // ── Prefix join (always enforce for relative paths) ──
   function joinPrefix(pfx, p) {
-    // normalize prefix separators and drop trailing slashes
     let normPfx = pfx.replace(/[\\/]+$/, '').replace(/\\/g, '/');
-    // absolute paths stay untouched
     if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
-    // normalize candidate path separators and drop leading slashes
     let norm = p.replace(/^[\\/]+/, '').replace(/\\/g, '/');
-    // remove existing prefix if present
     const esc = normPfx.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     norm = norm.replace(new RegExp('^' + esc + '/+'), '');
     return `${normPfx}/${norm}`;
@@ -104,7 +100,6 @@
         return;
       }
       const data = j.data;
-      // strip ANSI codes from stdout/stderr
       const out = stripAnsi(data.stdout).trim();
       const err = stripAnsi(data.stderr).trim();
       const msg = out || err || '(no output)';
@@ -202,7 +197,6 @@
     panel.addEventListener('toggle', adjust);
     adjust();
 
-    // ── Directory button ────────────────────────────────
     document.getElementById('panel-dir-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const path = inp.value.trim() || '.';
@@ -216,9 +210,8 @@
           el.value = text;
           el.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-          const sel = window.getSelection();
+          const sel = window.getSelection(), range = document.createRange();
           sel.removeAllRanges();
-          const range = document.createRange();
           range.selectNodeContents(el);
           range.deleteContents();
           const tn = document.createTextNode(text);
@@ -231,7 +224,6 @@
       });
     };
 
-    // ── Open button ─────────────────────────────────────
     document.getElementById('panel-open-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const path = inp.value.trim();
@@ -246,11 +238,10 @@
           el.value = text;
           el.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-          const sel = window.getSelection();
+          const sel = window.getSelection(), range = document.createRange();
           sel.removeAllRanges();
-          const range = document.createRange();
           range.selectNodeContents(el);
-          range.deleteContents();  
+          range.deleteContents();
           const tn = document.createTextNode(text);
           range.insertNode(tn);
           range.setStartAfter(tn);
@@ -261,7 +252,6 @@
       });
     };
 
-    // ── Peek button ─────────────────────────────────────
     document.getElementById('panel-peek-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const [path, lim] = inp.value.trim().split(/\s+/);
@@ -277,11 +267,10 @@
           el.value = text;
           el.dispatchEvent(new Event('input', { bubbles: true }));
         } else {
-          const sel = window.getSelection();
+          const sel = window.getSelection(), range = document.createRange();
           sel.removeAllRanges();
-          const range = document.createRange();
           range.selectNodeContents(el);
-          range.deleteContents();  
+          range.deleteContents();
           const tn = document.createTextNode(text);
           range.insertNode(tn);
           range.setStartAfter(tn);
@@ -386,12 +375,15 @@
     input.value = fp ? (prefixPath ? joinPrefix(prefixPath, fp) : fp) : '';
     pre.appendChild(input);
 
-    // Save on ENTER, Exec on CTRL+ENTER
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-        e.stopPropagation(); e.preventDefault(); btnSave.click();
+        e.stopPropagation();
+        e.preventDefault();
+        btnSave.click();
       } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.stopPropagation(); e.preventDefault(); btnExec.click();
+        e.stopPropagation();
+        e.preventDefault();
+        btnExec.click();
       }
     });
 
@@ -501,20 +493,66 @@
     }
   }
 
+  // ── Canvas save button injection ─────────────────────
+  function injectCanvasSave() {
+    const header = document.querySelector('section.popover header[class*="@container"][class*="h-14"]');
+    if (!header || header.dataset.hasSaveBtn) return;
+    const refBtn = header.querySelector('button[id^="radix-"]');
+    if (!refBtn) return;
+    header.dataset.hasSaveBtn = '1';
+
+    const dlBtn = document.createElement('button');
+    dlBtn.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path fill-rule="evenodd" d="M5 20h14v-2H5v2zm7-14v8h3l-4 4-4-4h3V6h2z"/>
+      </svg>
+    `;
+    Object.assign(dlBtn.style, {
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      padding: '4px',
+      marginLeft: '6px'
+    });
+    dlBtn.title = 'Save to server';
+
+    dlBtn.onclick = () => {
+      const codeEl = document.querySelector('.cm-content');
+      const code = codeEl ? codeEl.innerText : '';
+      let path = '';
+      // ▶▶ Scan each line for a path comment
+      code.split('\n').some(line => {
+        const m = line.match(PATH_RE);
+        if (m) {
+          path = m[1].trim();
+          return true;
+        }
+        return false;
+      });
+      if (!path) path = prompt('Enter save path:', '');
+      if (!path) return;
+      saveCode(code, path);
+    };
+
+    refBtn.insertAdjacentElement('afterend', dlBtn);
+  }
+
   // ── Init ──────────────────────────────────────────────
   document.querySelectorAll('div.markdown pre').forEach(addBtns);
-  new MutationObserver(ms =>
+  new MutationObserver(ms => {
     ms.forEach(m =>
       m.addedNodes.forEach(n => {
         if (n.nodeType !== 1) return;
         if (n.matches('div.markdown pre')) addBtns(n);
         else if (n.querySelectorAll) n.querySelectorAll('div.markdown pre').forEach(addBtns);
       })
-    )
-  ).observe(document.body, { childList: true, subtree: true });
+    );
+    injectCanvasSave();
+  }).observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', () => {
     injectPanel();
+    injectCanvasSave();
     toast('💾 ChatGPT Local Files by Curtis White Ready!');
   });
 })();
