@@ -1,14 +1,15 @@
-// path: ChatGPT-Local-Files/manifest.json
+
 {
   "manifest_version": 3,
   "name": "ChatGPT Local Files by Curtis White",
-  "version": "1.0.1",
-  "description": "Save ↗ / Run ▶ / Exec / Rrfsh / Notepad / VStudio: absolute‑positioned buttons with correct order and spacing; toasts + console log + history panel; nested mutation to handle JSON blocks",
+  "version": "1.0.2",
+  "description": "Save ↗ / Run ▶ / Exec / Rrfsh / Notepad / VStudio: code‑block buttons and localcmd integration",
   "host_permissions": [
     "http://127.0.0.1/*"
   ],
   "permissions": [
-    "scripting"
+    "scripting",
+    "clipboardWrite"
   ],
   "background": {
     "service_worker": "background.js"
@@ -19,7 +20,11 @@
         "https://chat.openai.com/*",
         "https://chatgpt.com/*"
       ],
-      "js": ["content.js"],
+      "js": [
+        "diff.min.js",
+        "diff-patch.js",
+        "content.js"
+      ],
       "run_at": "document_end"
     }
   ]
