@@ -5,7 +5,7 @@
 ![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 
 
-# File Commander
+# Workspace Commander / Local File Explorer
 
 ![image](https://github.com/user-attachments/assets/ebc5672a-59d6-460f-ac02-c4f49e615f23)
 
