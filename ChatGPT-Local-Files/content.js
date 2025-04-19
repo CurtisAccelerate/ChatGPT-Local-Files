@@ -31,14 +31,19 @@
 
   // ── Prefix join (always enforce for relative paths) ──
   function joinPrefix(pfx, p) {
+    // normalize prefix separators and drop trailing slashes
     let normPfx = pfx.replace(/[\\/]+$/, '').replace(/\\/g, '/');
+    // absolute paths stay untouched
     if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
+    // normalize candidate path separators and drop leading slashes
     let norm = p.replace(/^[\\/]+/, '').replace(/\\/g, '/');
+    // remove existing prefix if present
     const esc = normPfx.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     norm = norm.replace(new RegExp('^' + esc + '/+'), '');
     return `${normPfx}/${norm}`;
   }
 
+  // ── Chat input helper ─────────────────────────────────
   function getComposer() {
     return (
       document.querySelector('[contenteditable="true"][role="textbox"], .ProseMirror#prompt-textarea') ||
@@ -84,7 +89,7 @@
     }
   }
 
-  // send message to background and handle response
+  // ── Background commands ──────────────────────────────
   function runCommand(cmd, cwd = prefixPath || null) {
     chrome.runtime.sendMessage({ type: 'exec', payload: { command: cmd, cwd } }, j => {
       if (!j.ok) {
@@ -163,6 +168,9 @@
     summary.innerHTML = `
       <span>Logs & History (last ${maxLogLines})</span>
       <div style="display:flex;align-items:center;gap:6px;">
+        <button id="panel-dir-btn">Dir</button>
+        <button id="panel-open-btn">Open</button>
+        <button id="panel-peek-btn">Peek</button>
         <button id="set-prefix-btn">Prefix 📂</button>
         <button id="run-project-btn">Run ▶</button>
         <input id="panel-input" placeholder="path or cmd"
@@ -186,6 +194,96 @@
     panel.addEventListener('toggle', adjust);
     adjust();
 
+    // ── New Directory button ─────────────────────────────
+    document.getElementById('panel-dir-btn').onclick = () => {
+      const inp = document.getElementById('panel-input');
+      const path = inp.value.trim() || '.';
+      chrome.runtime.sendMessage({ type: 'list', payload: { path } }, j => {
+        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
+        const text = JSON.stringify(j.data.entries, null, 2);
+        const el = getComposer();
+        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
+        el.focus();
+        if (el.tagName === 'TEXTAREA') {
+          el.value = text;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.deleteContents();
+          const tn = document.createTextNode(text);
+          range.insertNode(tn);
+          range.setStartAfter(tn);
+          sel.addRange(range);
+          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        }
+        toast('📋 Directory pasted', '#10b981');
+      });
+    };
+
+    // ── New Open button ─────────────────────────────────
+    document.getElementById('panel-open-btn').onclick = () => {
+      const inp = document.getElementById('panel-input');
+      const path = inp.value.trim();
+      if (!path) return;
+      chrome.runtime.sendMessage({ type: 'open', payload: { path } }, j => {
+        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
+        const text = j.data.content;
+        const el = getComposer();
+        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
+        el.focus();
+        if (el.tagName === 'TEXTAREA') {
+          el.value = text;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.deleteContents();
+          const tn = document.createTextNode(text);
+          range.insertNode(tn);
+          range.setStartAfter(tn);
+          sel.addRange(range);
+          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        }
+        toast('📋 File pasted', '#10b981');
+      });
+    };
+
+    // ── New Peek button ─────────────────────────────────
+    document.getElementById('panel-peek-btn').onclick = () => {
+      const inp = document.getElementById('panel-input');
+      const [path, lim] = inp.value.trim().split(/\s+/);
+      const limit = Number(lim) || 50;
+      if (!path) return;
+      chrome.runtime.sendMessage({ type: 'peek', payload: { path, limit } }, j => {
+        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
+        const text = j.data.preview;
+        const el = getComposer();
+        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
+        el.focus();
+        if (el.tagName === 'TEXTAREA') {
+          el.value = text;
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.deleteContents();
+          const tn = document.createTextNode(text);
+          range.insertNode(tn);
+          range.setStartAfter(tn);
+          sel.addRange(range);
+          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        }
+        toast('📋 Preview pasted', '#10b981');
+      });
+    };
+
     document.getElementById('clear-logs-btn').onclick = () => {
       logs.length = 0;
       pre.textContent = '';
@@ -195,8 +293,8 @@
       if (p !== null) {
         prefixPath = p.trim();
         localStorage.setItem('cb_save_prefix', prefixPath);
-        toast(`Prefix set → ${prefixPath}`, '#8b5cf6');
         addLog(`[PREFIX] ${prefixPath}`);
+        toast(`Prefix set → ${prefixPath}`, '#8b5cf6');
       }
     };
     document.getElementById('run-project-btn').onclick = () => {
@@ -281,16 +379,12 @@
     input.value = fp ? (prefixPath ? joinPrefix(prefixPath, fp) : fp) : '';
     pre.appendChild(input);
 
-    // ── **NEW**: Save on ENTER, Exec on CTRL+ENTER ─────────────────
+    // Save on ENTER, Exec on CTRL+ENTER
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-        e.stopPropagation();
-        e.preventDefault();
-        btnSave.click();
+        e.stopPropagation(); e.preventDefault(); btnSave.click();
       } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.stopPropagation();
-        e.preventDefault();
-        btnExec.click();
+        e.stopPropagation(); e.preventDefault(); btnExec.click();
       }
     });
 
