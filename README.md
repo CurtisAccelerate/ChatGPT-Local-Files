@@ -185,13 +185,20 @@ class Program {
 
 ---
 
+## 📝 Updates
+
+- Added Directory, Open, Peek -> Input Commands to the text area
+- Fixed ability to rename and save file
+- Enhanced History Console / Shell for executing shell commands
+- INput field now supports press-enter (save) and ctrl-enter (execute)
+  
+
 ## 📝 TODO
 
 - [ ] Add support for ChatGPT **Canvas** block content
 
 ## 📝 Knonwn bugs / To Be Fixed
 
-- [ ] Changing the save path and press enter should save file with updated path.
 
 ---
 
