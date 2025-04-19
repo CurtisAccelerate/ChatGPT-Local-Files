@@ -7,6 +7,11 @@
   const ENABLE_AUTO_INSERT = true;
   const PATH_RE = /^\s*(?:\/\/|#|<!--)?\s*path\s*:\s*(.+?)(?:\s*-->)?\s*$/i;
 
+  // ── ANSI escape stripper ──────────────────────────────
+  function stripAnsi(text) {
+    return text.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+  }
+
   // ── Toast helper ─────────────────────────────────────
   const toast = (msg, bg = '#2563eb') => {
     const d = Object.assign(document.createElement('div'), {
@@ -19,7 +24,7 @@
         'padding:8px 18px',
         `background:${bg}`,
         'color:#fff',
-        'font:600 13px/1.4 sans-serif',
+        'font:600 13px/1.4 Consolas, monospace',
         'border-radius:6px',
         'z-index:2147483647',
         'pointer-events:none'
@@ -99,7 +104,9 @@
         return;
       }
       const data = j.data;
-      const out = data.stdout.trim(), err = data.stderr.trim();
+      // strip ANSI codes from stdout/stderr
+      const out = stripAnsi(data.stdout).trim();
+      const err = stripAnsi(data.stderr).trim();
       const msg = out || err || '(no output)';
       toast(`▶ ${msg}`, data.code === 0 ? '#10b981' : '#ef4444');
       addLog(`[OUTPUT] ${msg}`);
@@ -130,7 +137,8 @@
   // ── Panel & History ───────────────────────────────────
   let prefixPath = localStorage.getItem('cb_save_prefix') || '';
   let cmdHistory = JSON.parse(localStorage.getItem('cb_cmd_history') || '[]');
-  const maxLogLines = 20, logs = [];
+  const logs = [];
+  const maxLogLines = 20;
   let panel;
 
   function injectPanel() {
@@ -145,7 +153,7 @@
       width: '50vw',
       background: '#2563eb',
       color: '#fff',
-      font: '13px/1.4 sans-serif',
+      font: '13px/1.4 Consolas, monospace',
       maxHeight: '360px',
       overflow: 'auto',
       borderTop: '1px solid #1e40af',
@@ -166,7 +174,7 @@
       whiteSpace: 'nowrap'
     });
     summary.innerHTML = `
-      <span>Logs & History (last ${maxLogLines})</span>
+      <span>History Panel</span>
       <div style="display:flex;align-items:center;gap:6px;">
         <button id="panel-dir-btn">Dir</button>
         <button id="panel-open-btn">Open</button>
@@ -184,7 +192,7 @@
 
     const pre = document.createElement('pre');
     pre.id = 'log-panel-content';
-    pre.style.cssText = 'margin:0;padding:8px;white-space:pre-wrap;';
+    pre.style.cssText = 'margin:0;padding:8px;white-space:pre-wrap;font-family:Consolas, monospace;';
     panel.appendChild(pre);
     document.body.appendChild(panel);
 
@@ -194,7 +202,7 @@
     panel.addEventListener('toggle', adjust);
     adjust();
 
-    // ── New Directory button ─────────────────────────────
+    // ── Directory button ────────────────────────────────
     document.getElementById('panel-dir-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const path = inp.value.trim() || '.';
@@ -223,7 +231,7 @@
       });
     };
 
-    // ── New Open button ─────────────────────────────────
+    // ── Open button ─────────────────────────────────────
     document.getElementById('panel-open-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const path = inp.value.trim();
@@ -242,7 +250,7 @@
           sel.removeAllRanges();
           const range = document.createRange();
           range.selectNodeContents(el);
-          range.deleteContents();
+          range.deleteContents();  
           const tn = document.createTextNode(text);
           range.insertNode(tn);
           range.setStartAfter(tn);
@@ -253,7 +261,7 @@
       });
     };
 
-    // ── New Peek button ─────────────────────────────────
+    // ── Peek button ─────────────────────────────────────
     document.getElementById('panel-peek-btn').onclick = () => {
       const inp = document.getElementById('panel-input');
       const [path, lim] = inp.value.trim().split(/\s+/);
@@ -273,7 +281,7 @@
           sel.removeAllRanges();
           const range = document.createRange();
           range.selectNodeContents(el);
-          range.deleteContents();
+          range.deleteContents();  
           const tn = document.createTextNode(text);
           range.insertNode(tn);
           range.setStartAfter(tn);
@@ -292,7 +300,6 @@
       const p = prompt('Enter save/run prefix:', prefixPath);
       if (p !== null) {
         prefixPath = p.trim();
-        localStorage.setItem('cb_save_prefix', prefixPath);
         addLog(`[PREFIX] ${prefixPath}`);
         toast(`Prefix set → ${prefixPath}`, '#8b5cf6');
       }
