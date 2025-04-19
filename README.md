@@ -1,6 +1,7 @@
 # ChatGPT-Local-Files
 
 ![image](https://github.com/user-attachments/assets/e7f5b96b-7513-4463-b01c-175238f976bc)
+![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 
 ## ChatGPT-Local-Files by Curtis White
 
@@ -191,11 +192,12 @@ class Program {
 - Fixed ability to rename and save file
 - Enhanced History Console / Shell for executing shell commands
 - INput field now supports press-enter (save) and ctrl-enter (execute)
-  
+- Added download button for canvas documents. Recommend not to use canvas / avoid for this plugin but now supports it.
+- 
 
 ## 📝 TODO
 
-- [ ] Add support for ChatGPT **Canvas** block content
+- [ ] Add ChatGPT initated commmands
 
 ## 📝 Known bugs / To Be Fixed
 
