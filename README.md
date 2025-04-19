@@ -103,7 +103,12 @@ Supported/Tested Windows Only
 - `Notepad`: Open file in Notepad
 - `VStudio`: Open file in VS Code
 
----
+- 
+
+## WorkSpace Commander
+
+- Click to open/copy or peek file contents into text area with path metadata included
+  
 
 ## 🧠 State Management & Command History
 
@@ -112,7 +117,7 @@ Supported/Tested Windows Only
   - Use `↑` / `↓` arrow keys in the command input field to cycle through history
 - Use the “Prefix 📂” button to change your root (default: `Work/`)
 
-![image](https://github.com/user-attachments/assets/4f30cd1b-494e-4171-9278-678538deade5)
+
 
 ---
 
