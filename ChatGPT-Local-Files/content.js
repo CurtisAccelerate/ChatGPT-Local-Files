@@ -1,4 +1,4 @@
-// path: ChatGPT-Local-Files/content.js
+// path: ./ChatGPT-Local-Files/content.js
 (() => {
   'use strict';
   console.log('[ChatGPT Local Files] Content script loaded');
@@ -241,86 +241,85 @@
     };
   }
 
+  function loadDirectory(dirPath, container) {
+    chrome.runtime.sendMessage({ type: 'list', payload: { path: dirPath } }, r => {
+      if (!r.ok) {
+        toast(`⚠ ${r.err}`, '#ef4444');
+        return;
+      }
+      const ul = document.createElement('ul');
+      ul.style.listStyle = 'none';
+      ul.style.paddingLeft = '12px';
 
-function loadDirectory(dirPath, container) {
-  chrome.runtime.sendMessage({ type: 'list', payload: { path: dirPath } }, r => {
-    if (!r.ok) {
-      toast(`⚠ ${r.err}`, '#ef4444');
-      return;
-    }
-    const ul = document.createElement('ul');
-    ul.style.listStyle = 'none';
-    ul.style.paddingLeft = '12px';
+      for (const ent of r.data.entries) {
+        const li = document.createElement('li');
+        li.style.margin = '4px 0';
 
-    for (const ent of r.data.entries) {
-      const li = document.createElement('li');
-      li.style.margin = '4px 0';
+        if (ent.is_dir) {
+          const span = document.createElement('span');
+          span.textContent = '▶ ' + ent.name;
+          span.style.cursor = 'pointer';
+          span.onclick = () => {
+            if (li.open) {
+              li.lastChild.remove();
+              li.open = false;
+              span.textContent = '▶ ' + ent.name;
+            } else {
+              span.textContent = '▼ ' + ent.name;
+              const sub = document.createElement('div');
+              sub.style.paddingLeft = '12px';
+              loadDirectory(dirPath + '/' + ent.name, sub);
+              li.appendChild(sub);
+              li.open = true;
+            }
+          };
+          li.appendChild(span);
 
-      if (ent.is_dir) {
-        const span = document.createElement('span');
-        span.textContent = '▶ ' + ent.name;
-        span.style.cursor = 'pointer';
-        span.onclick = () => {
-          if (li.open) {
-            li.lastChild.remove();
-            li.open = false;
-            span.textContent = '▶ ' + ent.name;
-          } else {
-            span.textContent = '▼ ' + ent.name;
-            const sub = document.createElement('div');
-            sub.style.paddingLeft = '12px';
-            loadDirectory(dirPath + '/' + ent.name, sub);
-            li.appendChild(sub);
-            li.open = true;
-          }
-        };
-        li.appendChild(span);
+        } else {
+          // file entry: name + Insert / Peek CTAs
+          const fileLabel = document.createElement('span');
+          fileLabel.textContent = ent.name + ' ';
+          li.appendChild(fileLabel);
 
-      } else {
-        // file entry: name + Insert / Peek CTAs
-        const fileLabel = document.createElement('span');
-        fileLabel.textContent = ent.name + ' ';
-        li.appendChild(fileLabel);
+          // “Insert” CTA button
+          const ins = document.createElement('button');
+          ins.innerHTML = '📥 Insert';
+          Object.assign(ins.style, {
+            marginRight: '6px',
+            background: '#10b981',
+            border: 'none',
+            borderRadius: '4px',
+            color: '#fff',
+            padding: '4px 8px',
+            cursor: 'pointer',
+            fontSize: '0.9em'
+          });
+          ins.onclick = () => insertFile(dirPath + '/' + ent.name, false);
 
-        // “Insert” CTA button
-        const ins = document.createElement('button');
-        ins.innerHTML = '📥 Insert';
-        Object.assign(ins.style, {
-          marginRight: '6px',
-          background: '#10b981',
-          border: 'none',
-          borderRadius: '4px',
-          color: '#fff',
-          padding: '4px 8px',
-          cursor: 'pointer',
-          fontSize: '0.9em'
-        });
-        ins.onclick = () => insertFile(dirPath + '/' + ent.name, false);
+          // “Peek” CTA button
+          const pk = document.createElement('button');
+          pk.innerHTML = '🔍 Peek';
+          Object.assign(pk.style, {
+            background: '#89b910',
+            border: 'none',
+            borderRadius: '4px',
+            color: '#fff',
+            padding: '4px 8px',
+            cursor: 'pointer',
+            fontSize: '0.9em'
+          });
+          pk.onclick = () => insertFile(dirPath + '/' + ent.name, true);
 
-        // “Peek” CTA button
-        const pk = document.createElement('button');
-        pk.innerHTML = '🔍 Peek';
-        Object.assign(pk.style, {
-          background: '#89b910',
-          border: 'none',
-          borderRadius: '4px',
-          color: '#fff',
-          padding: '4px 8px',
-          cursor: 'pointer',
-          fontSize: '0.9em'
-        });
-        pk.onclick = () => insertFile(dirPath + '/' + ent.name, true);
+          li.appendChild(ins);
+          li.appendChild(pk);
+        }
 
-        li.appendChild(ins);
-        li.appendChild(pk);
+        ul.appendChild(li);
       }
 
-      ul.appendChild(li);
-    }
-
-    container.appendChild(ul);
-  });
-}
+      container.appendChild(ul);
+    });
+  }
 
   function insertFile(path, peek) {
     const composer = getComposer();
@@ -359,7 +358,14 @@ function loadDirectory(dirPath, container) {
 
     const extractPath = () => {
       const text = codeEl.textContent || '';
-      for (let line of text.split('\n')) {
+      const lines = text.split('\n');
+      // 1) bare first-line "path: <file>"
+      if (lines.length > 0) {
+        const bare = lines[0].match(/^\s*path\s*:\s*(.+)$/i);
+        if (bare) return bare[1].trim();
+      }
+      // 2) fallback: comment‑style
+      for (let line of lines) {
         const m = line.match(PATH_RE);
         if (m) return m[1].trim();
       }
@@ -521,7 +527,6 @@ function loadDirectory(dirPath, container) {
     const refBtn = header.querySelector('button[id^="radix-"]');
     if (!refBtn) return;
     header.dataset.hasSaveBtn = '1';
-
     const dlBtn = document.createElement('button');
     dlBtn.innerHTML = `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -536,7 +541,6 @@ function loadDirectory(dirPath, container) {
       marginLeft: '6px'
     });
     dlBtn.title = 'Save to server';
-
     dlBtn.onclick = () => {
       const codeEl = document.querySelector('.cm-content');
       const code = codeEl ? codeEl.innerText : '';
@@ -553,7 +557,6 @@ function loadDirectory(dirPath, container) {
       if (!path) return;
       saveCode(code, path);
     };
-
     refBtn.insertAdjacentElement('afterend', dlBtn);
   }
 
