@@ -34,7 +34,7 @@
     setTimeout(() => d.remove(), 1500);
   };
 
-  // ── Prefix join (always enforce for relative paths) ──
+  // ── Prefix join ──────────────────────────────────────
   function joinPrefix(pfx, p) {
     let normPfx = pfx.replace(/[\\/]+$/, '').replace(/\\/g, '/');
     if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
@@ -50,6 +50,31 @@
       document.querySelector('[contenteditable="true"][role="textbox"], .ProseMirror#prompt-textarea') ||
       document.querySelector('textarea[data-testid="prompt-textarea"], textarea#prompt-textarea, textarea:not([style*="display: none"])')
     );
+  }
+
+  // ── Paste preserving newlines ────────────────────────
+  function pasteIntoComposer(el, text) {
+    if (el.tagName === 'TEXTAREA') {
+      el.value = text;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      const range = sel.getRangeAt(0);
+      text.split('\n').forEach((line, i, arr) => {
+        const tn = document.createTextNode(line);
+        range.insertNode(tn);
+        range.setStartAfter(tn);
+        if (i < arr.length - 1) {
+          const br = document.createElement('br');
+          range.insertNode(br);
+          range.setStartAfter(br);
+        }
+      });
+      sel.removeAllRanges();
+      sel.addRange(range);
+      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    }
   }
 
   async function pasteError(text) {
@@ -71,23 +96,8 @@
       return;
     }
     el.focus();
-    if (el.tagName === 'TEXTAREA') {
-      el.value = block;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      toast('📋 Error inserted into textarea', '#ef4444');
-    } else {
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.deleteContents();
-      const tn = document.createTextNode(block);
-      range.insertNode(tn);
-      range.setStartAfter(tn);
-      sel.addRange(range);
-      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      toast('📋 Error inserted', '#ef4444');
-    }
+    pasteIntoComposer(el, block);
+    toast('📋 Error inserted', '#ef4444');
   }
 
   // ── Background commands ──────────────────────────────
@@ -129,162 +139,90 @@
     });
   }
 
-  // ── Panel & History ───────────────────────────────────
+  // ── Workspace Commander ───────────────────────────────
   let prefixPath = localStorage.getItem('cb_save_prefix') || '';
   let cmdHistory = JSON.parse(localStorage.getItem('cb_cmd_history') || '[]');
   const logs = [];
   const maxLogLines = 20;
   let panel;
 
-  function injectPanel() {
+  function injectCommander() {
     if (panel) return;
     panel = document.createElement('details');
-    panel.id = 'log-panel';
+    panel.id = 'workspace-commander';
     panel.open = false;
-    Object.assign(panel.style, {
-      position: 'fixed',
-      bottom: '0',
-      left: '0',
-      width: '50vw',
-      background: '#2563eb',
-      color: '#fff',
-      font: '13px/1.4 Consolas, monospace',
-      maxHeight: '360px',
-      overflow: 'auto',
-      borderTop: '1px solid #1e40af',
-      zIndex: 9999999,
-      pointerEvents: 'auto'
+    // draggable & resizable
+    panel.style.cssText = `
+      position:fixed; bottom:0; left:0; width:40vw; background:#2563eb;
+      color:#fff; font:13px/1.4 Consolas,monospace; max-height:60vh;
+      overflow:auto; border-top:1px solid #1e40af; z-index:9999999;
+      resize:both; pointer-events:auto;
+    `;
+    panel.setAttribute('draggable', 'true');
+    panel.addEventListener('dragstart', e => {
+      const rect = panel.getBoundingClientRect();
+      panel.dataset.dx = e.clientX - rect.left;
+      panel.dataset.dy = e.clientY - rect.top;
+    });
+    document.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!panel.dataset.dx) return;
+      panel.style.left = `${e.clientX - panel.dataset.dx}px`;
+      panel.style.bottom = 'auto';
+      panel.style.top = `${e.clientY - panel.dataset.dy}px`;
     });
 
+    // control bar (drag handle)
     const summary = document.createElement('summary');
-    Object.assign(summary.style, {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '6px 12px',
-      background: '#1e3a8a',
-      cursor: 'pointer',
-      color: '#fff',
-      fontWeight: '600',
-      whiteSpace: 'nowrap'
-    });
-    summary.innerHTML = `
-      <span>History Panel</span>
-      <div style="display:flex;align-items:center;gap:6px;">
-        <button id="panel-dir-btn">Dir</button>
-        <button id="panel-open-btn">Open</button>
-        <button id="panel-peek-btn">Peek</button>
-        <button id="set-prefix-btn">Prefix 📂</button>
-        <button id="run-project-btn">Run ▶</button>
-        <input id="panel-input" placeholder="path or cmd"
-               style="padding:2px 6px;font:12px monospace;
-                      width:180px;border-radius:3px;border:none;">
-        <button id="panel-exec-btn">Exec</button>
-        <button id="clear-logs-btn">Clear</button>
-      </div>
+    summary.style.cssText = `
+      display:flex; align-items:center; justify-content:center;
+      padding:6px; background:#1e3a8a; cursor:move; user-select:none;
     `;
+    summary.textContent = '📂 Workspace Commander';
     panel.appendChild(summary);
 
-    const pre = document.createElement('pre');
-    pre.id = 'log-panel-content';
-    pre.style.cssText = 'margin:0;padding:8px;white-space:pre-wrap;font-family:Consolas, monospace;';
-    panel.appendChild(pre);
+    // ── Controls bar ─────────────────────────────────────
+    const controls = document.createElement('div');
+    controls.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 8px;background:#1e3a8a';
+    controls.innerHTML = `
+      <button id="set-prefix-btn">📂Prefix</button>
+      <button id="run-project-btn">▶ Run </button>
+      <button id="clear-logs-btn">Clear Log</button>
+    `;
+    panel.appendChild(controls);
+
+    // file tree container
+    const tree = document.createElement('div');
+    tree.id = 'workspace-tree';
+    tree.style.padding = '8px';
+    panel.appendChild(tree);
+
+    // log view at bottom
+    const logview = document.createElement('pre');
+    logview.id = 'commander-log-content';
+    logview.style.cssText = `
+      margin:0; padding:8px; white-space:pre-wrap;
+      font-family:Consolas,monospace; background:#1e40af;
+    `;
+    panel.appendChild(logview);
+
     document.body.appendChild(panel);
 
-    const adjust = () =>
-      (document.body.style.marginBottom = `${panel.getBoundingClientRect().height}px`);
+    function adjust() {
+      document.body.style.marginBottom = `${panel.getBoundingClientRect().height}px`;
+    }
     window.addEventListener('resize', adjust);
     panel.addEventListener('toggle', adjust);
-    adjust();
 
-    document.getElementById('panel-dir-btn').onclick = () => {
-      const inp = document.getElementById('panel-input');
-      const path = inp.value.trim() || '.';
-      chrome.runtime.sendMessage({ type: 'list', payload: { path } }, j => {
-        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
-        const text = JSON.stringify(j.data.entries, null, 2);
-        const el = getComposer();
-        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
-        el.focus();
-        if (el.tagName === 'TEXTAREA') {
-          el.value = text;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          const sel = window.getSelection(), range = document.createRange();
-          sel.removeAllRanges();
-          range.selectNodeContents(el);
-          range.deleteContents();
-          const tn = document.createTextNode(text);
-          range.insertNode(tn);
-          range.setStartAfter(tn);
-          sel.addRange(range);
-          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-        }
-        toast('📋 Directory pasted', '#10b981');
-      });
-    };
+    // auto-load root on first open
+    tree.dataset.loaded = '0';
+    panel.addEventListener('toggle', () => {
+      if (panel.open && tree.dataset.loaded === '0') {
+        loadDirectory('.', tree);
+        tree.dataset.loaded = '1';
+      }
+    });
 
-    document.getElementById('panel-open-btn').onclick = () => {
-      const inp = document.getElementById('panel-input');
-      const path = inp.value.trim();
-      if (!path) return;
-      chrome.runtime.sendMessage({ type: 'open', payload: { path } }, j => {
-        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
-        const text = j.data.content;
-        const el = getComposer();
-        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
-        el.focus();
-        if (el.tagName === 'TEXTAREA') {
-          el.value = text;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          const sel = window.getSelection(), range = document.createRange();
-          sel.removeAllRanges();
-          range.selectNodeContents(el);
-          range.deleteContents();
-          const tn = document.createTextNode(text);
-          range.insertNode(tn);
-          range.setStartAfter(tn);
-          sel.addRange(range);
-          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-        }
-        toast('📋 File pasted', '#10b981');
-      });
-    };
-
-    document.getElementById('panel-peek-btn').onclick = () => {
-      const inp = document.getElementById('panel-input');
-      const [path, lim] = inp.value.trim().split(/\s+/);
-      const limit = Number(lim) || 50;
-      if (!path) return;
-      chrome.runtime.sendMessage({ type: 'peek', payload: { path, limit } }, j => {
-        if (!j.ok) { toast(`⚠ ${j.err}`, '#ef4444'); return; }
-        const text = j.data.preview;
-        const el = getComposer();
-        if (!el) { toast('⚠ Chat input not found', '#ef4444'); return; }
-        el.focus();
-        if (el.tagName === 'TEXTAREA') {
-          el.value = text;
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-        } else {
-          const sel = window.getSelection(), range = document.createRange();
-          sel.removeAllRanges();
-          range.selectNodeContents(el);
-          range.deleteContents();
-          const tn = document.createTextNode(text);
-          range.insertNode(tn);
-          range.setStartAfter(tn);
-          sel.addRange(range);
-          el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-        }
-        toast('📋 Preview pasted', '#10b981');
-      });
-    };
-
-    document.getElementById('clear-logs-btn').onclick = () => {
-      logs.length = 0;
-      pre.textContent = '';
-    };
     document.getElementById('set-prefix-btn').onclick = () => {
       const p = prompt('Enter save/run prefix:', prefixPath);
       if (p !== null) {
@@ -294,37 +232,120 @@
       }
     };
     document.getElementById('run-project-btn').onclick = () => {
-      const inp = document.getElementById('panel-input');
-      inp.value = '';
-      inp.focus();
+      const cmd = prompt('Enter command to run:', '');
+      if (cmd) runCommand(cmd);
     };
-    document.getElementById('panel-exec-btn').onclick = () => {
-      const cmd = document.getElementById('panel-input').value.trim();
-      if (!cmd) return;
-      addLog(`[PANEL EXEC] ${cmd}`);
-      runCommand(cmd);
+    document.getElementById('clear-logs-btn').onclick = () => {
+      logs.length = 0;
+      logview.textContent = '';
     };
+  }
 
-    const pin = document.getElementById('panel-input');
-    let pidx = -1;
-    pin.addEventListener('keydown', e => {
-      if (e.key === 'ArrowUp') {
-        pidx = Math.min(pidx + 1, cmdHistory.length - 1);
-        pin.value = cmdHistory[pidx] || '';
-        e.preventDefault();
-      } else if (e.key === 'ArrowDown') {
-        pidx = Math.max(pidx - 1, 0);
-        pin.value = cmdHistory[pidx] || '';
-        e.preventDefault();
+
+function loadDirectory(dirPath, container) {
+  chrome.runtime.sendMessage({ type: 'list', payload: { path: dirPath } }, r => {
+    if (!r.ok) {
+      toast(`⚠ ${r.err}`, '#ef4444');
+      return;
+    }
+    const ul = document.createElement('ul');
+    ul.style.listStyle = 'none';
+    ul.style.paddingLeft = '12px';
+
+    for (const ent of r.data.entries) {
+      const li = document.createElement('li');
+      li.style.margin = '4px 0';
+
+      if (ent.is_dir) {
+        const span = document.createElement('span');
+        span.textContent = '▶ ' + ent.name;
+        span.style.cursor = 'pointer';
+        span.onclick = () => {
+          if (li.open) {
+            li.lastChild.remove();
+            li.open = false;
+            span.textContent = '▶ ' + ent.name;
+          } else {
+            span.textContent = '▼ ' + ent.name;
+            const sub = document.createElement('div');
+            sub.style.paddingLeft = '12px';
+            loadDirectory(dirPath + '/' + ent.name, sub);
+            li.appendChild(sub);
+            li.open = true;
+          }
+        };
+        li.appendChild(span);
+
+      } else {
+        // file entry: name + Insert / Peek CTAs
+        const fileLabel = document.createElement('span');
+        fileLabel.textContent = ent.name + ' ';
+        li.appendChild(fileLabel);
+
+        // “Insert” CTA button
+        const ins = document.createElement('button');
+        ins.innerHTML = '📥 Insert';
+        Object.assign(ins.style, {
+          marginRight: '6px',
+          background: '#10b981',
+          border: 'none',
+          borderRadius: '4px',
+          color: '#fff',
+          padding: '4px 8px',
+          cursor: 'pointer',
+          fontSize: '0.9em'
+        });
+        ins.onclick = () => insertFile(dirPath + '/' + ent.name, false);
+
+        // “Peek” CTA button
+        const pk = document.createElement('button');
+        pk.innerHTML = '🔍 Peek';
+        Object.assign(pk.style, {
+          background: '#89b910',
+          border: 'none',
+          borderRadius: '4px',
+          color: '#fff',
+          padding: '4px 8px',
+          cursor: 'pointer',
+          fontSize: '0.9em'
+        });
+        pk.onclick = () => insertFile(dirPath + '/' + ent.name, true);
+
+        li.appendChild(ins);
+        li.appendChild(pk);
       }
-    });
+
+      ul.appendChild(li);
+    }
+
+    container.appendChild(ul);
+  });
+}
+
+  function insertFile(path, peek) {
+    const composer = getComposer();
+    if (!composer) { toast('⚠ Chat input not found', '#ef4444'); return; }
+    composer.focus();
+    const header = `// path: ${path}\n\n`;
+    if (!peek) {
+      chrome.runtime.sendMessage({ type: 'open', payload: { path } }, r => {
+        if (!r.ok) { toast(`⚠ ${r.err}`, '#ef4444'); return; }
+        pasteIntoComposer(composer, header + r.data.content);
+      });
+    } else {
+      chrome.runtime.sendMessage({ type: 'peek', payload: { path, limit: 10 } }, r => {
+        if (!r.ok) { toast(`⚠ ${r.err}`, '#ef4444'); return; }
+        const more = r.data.lines >= 10 ? '\n…' : '';
+        pasteIntoComposer(composer, header + r.data.preview + more);
+      });
+    }
   }
 
   function addLog(entry) {
-    injectPanel();
+    injectCommander();
     logs.push(entry);
     if (logs.length > maxLogLines) logs.shift();
-    document.getElementById('log-panel-content').textContent = logs.join('\n');
+    document.getElementById('commander-log-content').textContent = logs.join('\n');
     if (!panel.open) panel.open = true;
   }
 
@@ -418,11 +439,11 @@
     };
 
     const btnSave = makeBtn('Save ↗', lefts.save);
-    const btnRun = makeBtn('Run ▶', lefts.run);
+    const btnRun  = makeBtn('Run ▶', lefts.run);
     const btnExec = makeBtn('Exec', lefts.exec);
-    const btnRrf = makeBtn('Rrfsh', lefts.rrf);
+    const btnRrf  = makeBtn('Rrfsh', lefts.rrf);
     const btnNote = makeBtn('Notepad', lefts.note);
-    const btnVS = makeBtn('VStudio', lefts.vs);
+    const btnVS   = makeBtn('VStudio', lefts.vs);
 
     btnSave.onclick = e => {
       e.stopPropagation();
@@ -520,7 +541,6 @@
       const codeEl = document.querySelector('.cm-content');
       const code = codeEl ? codeEl.innerText : '';
       let path = '';
-      // ▶▶ Scan each line for a path comment
       code.split('\n').some(line => {
         const m = line.match(PATH_RE);
         if (m) {
@@ -551,7 +571,7 @@
   }).observe(document.body, { childList: true, subtree: true });
 
   window.addEventListener('load', () => {
-    injectPanel();
+    injectCommander();
     injectCanvasSave();
     toast('💾 ChatGPT Local Files by Curtis White Ready!');
   });
