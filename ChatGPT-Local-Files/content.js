@@ -5,7 +5,7 @@
 
   // ── CONFIG ───────────────────────────────────────────
   const ENABLE_AUTO_INSERT = true;
-  const PATH_RE = /^\s*(?:\/\/|#|<!--)?\s*path\s*:\s*(.+?)(?:\s*-->)?\s*$/i;
+  const PATH_RE = /^\s*(?:\/\/|#|<!--|\/\*)\s*path\s*:\s*(.+?)\s*(?:\*\/|-->)?\s*$/i;
 
   // ── ANSI escape stripper ──────────────────────────────
   function stripAnsi(text) {
