@@ -31,13 +31,9 @@
 
   // ── Prefix join (always enforce for relative paths) ──
   function joinPrefix(pfx, p) {
-    // normalize prefix separators and drop trailing slashes
     let normPfx = pfx.replace(/[\\/]+$/, '').replace(/\\/g, '/');
-    // absolute paths stay untouched
     if (/^[A-Za-z]:[\\/]/.test(p) || /^\//.test(p)) return p;
-    // normalize candidate path separators and drop leading slashes
     let norm = p.replace(/^[\\/]+/, '').replace(/\\/g, '/');
-    // remove existing prefix if present
     const esc = normPfx.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
     norm = norm.replace(new RegExp('^' + esc + '/+'), '');
     return `${normPfx}/${norm}`;
@@ -285,6 +281,19 @@
     input.value = fp ? (prefixPath ? joinPrefix(prefixPath, fp) : fp) : '';
     pre.appendChild(input);
 
+    // ── **NEW**: Save on ENTER, Exec on CTRL+ENTER ─────────────────
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+        e.stopPropagation();
+        e.preventDefault();
+        btnSave.click();
+      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.stopPropagation();
+        e.preventDefault();
+        btnExec.click();
+      }
+    });
+
     const codeObserver = new MutationObserver(() => {
       const fresh = extractPath();
       input.value = fresh ? (prefixPath ? joinPrefix(prefixPath, fresh) : fresh) : input.value;
@@ -356,7 +365,6 @@
     };
     btnRrf.onclick = e => {
       e.stopPropagation();
-      // just refresh the input with the normalized path, keep prefix intact
       const fresh = extractPath();
       const newPath = fresh ? (prefixPath ? joinPrefix(prefixPath, fresh) : fresh) : '';
       input.value = newPath;
