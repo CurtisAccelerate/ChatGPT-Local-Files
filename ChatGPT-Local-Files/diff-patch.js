@@ -27,18 +27,25 @@
   const PATH_RE = /^\s*(?:\/\/|#|<!--|\/\*)\s*path\s*:\s*(.+?)\s*(?:\*\/|-->)?\s*$/i;
   function extractPath(diffText) {
     const lines = diffText.split('\n');
-    if (lines.length > 0) {
-      const m = lines[0].match(/^\s*path\s*:\s*(.+)$/i);
-      if (m) return m[1].trim();
+  
+    // 1) bare first‑line path: …
+    if (lines[0].match(/^\s*path\s*:\s*(.+)$/i)) {
+      return RegExp.$1.trim();
     }
+  
+    // 2) comment‑style…
     for (const line of lines) {
-      const m = line.match(PATH_RE);
+      const m = line.match(/^\s*(?:\/\/|#|<!--|\/\*)\s*path\s*:\s*(.+?)\s*(?:\*\/|-->)?\s*$/i);
       if (m) return m[1].trim();
     }
+  
+    // 3) git‑style diff header with optional a/ b/
     for (const line of lines) {
-      const m = line.match(/^\+\+\+\s+[ab]\/(.+)$/);
-      if (m) return m[1].trim();
+      // handle "+++ b/file" or "+++ file"
+      const m2 = line.match(/^\+\+\+\s+(?:[ab]\/)?(.+)$/);
+      if (m2) return m2[1].trim();
     }
+  
     return '';
   }
 
