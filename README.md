@@ -1,9 +1,9 @@
-# ChatGPT-Local-Files
+## ChatGPT-Local-Files by Curtis White
 
+Action Buttons
 ![image](https://github.com/user-attachments/assets/e7f5b96b-7513-4463-b01c-175238f976bc)
 ![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 
-## ChatGPT-Local-Files by Curtis White
 
 File Commander
 ![image](https://github.com/user-attachments/assets/ebc5672a-59d6-460f-ac02-c4f49e615f23)
