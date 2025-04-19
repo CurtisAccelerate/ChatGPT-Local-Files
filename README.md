@@ -5,6 +5,9 @@
 
 ## ChatGPT-Local-Files by Curtis White
 
+File Commander
+![image](https://github.com/user-attachments/assets/ebc5672a-59d6-460f-ac02-c4f49e615f23)
+
 A browser extension that empowers ChatGPT with true local project management: save, run, edit, and reload files on your machine directly from the chat interface.
 
 ---
@@ -63,6 +66,8 @@ This tool bridges ChatGPT with your local file system and terminal:
 - Open files in Notepad or VS Code
 - Displays a bottom panel for logs, history, and prefix management
 - Auto-copies errors to clipboard and (if enabled) inserts them directly into the chat input area
+- Draggable File Commander for dumping files into chat with one-click with context!!!
+- Adds download link to path for Canvas 'docs' too
 
 ---
 
@@ -106,6 +111,8 @@ Supported/Tested Windows Only
   - Use `↑` / `↓` arrow keys in the command input field to cycle through history
 - Use the “Prefix 📂” button to change your root (default: `Work/`)
 
+![image](https://github.com/user-attachments/assets/4f30cd1b-494e-4171-9278-678538deade5)
+
 ---
 
 ## ⚠️ Error Handling
@@ -135,7 +142,7 @@ This tells the extension where to save the file, relative to `Work/`.
 - `#` for Python, Shell, Ruby
 - `<!-- -->` for HTML, XML
 
-Never use Canvas.
+
 
 📁 **Working path:** `YourPathHere'
 
@@ -201,6 +208,7 @@ class Program {
 
 ## 📝 Known bugs / To Be Fixed
 
+- Sometimes when pasting into the text area it can braek the React DOM. If you don't see File Commander, clear the text input area.
 
 ---
 
