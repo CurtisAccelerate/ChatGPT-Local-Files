@@ -1,4 +1,18 @@
 // path: ./ChatGPT-Local-Files/content.js
+;(() => {
+  // load local diff.min.js first
+  const diffLib = document.createElement('script');
+  diffLib.src = chrome.runtime.getURL('diff.min.js');
+  diffLib.onload = () => {
+    // once jsdiff is available, load our patcher
+    const patcher = document.createElement('script');
+    patcher.src = chrome.runtime.getURL('diff-patch.js');
+    document.head.appendChild(patcher);
+  };
+  document.head.appendChild(diffLib);
+})();
+
+
 (() => {
   'use strict';
   console.log('[ChatGPT Local Files] Content script loaded');
@@ -373,15 +387,16 @@
     };
     let fp = extractPath();
 
-    const gap = 2, btnW = 60, inW = 180;
+    const gap = 2, btnW = 50, inW = 180;
     const lefts = {
       save: 8,
-      run: 8 + (btnW + gap),
-      input: 8 + 2 * (btnW + gap),
-      exec: 8 + 2 * (btnW + gap) + inW + gap,
-      rrf: 8 + 3 * (btnW + gap) + inW + gap,
-      note: 8 + 4 * (btnW + gap) + inW + gap,
-      vs: 8 + 5 * (btnW + gap) + inW + gap
+      diff: 8 + (btnW + gap),                 // 8 + 52 = 60
+      run: 8 + 2 * (btnW + gap),              // 8 + 104 = 112
+      input: 8 + 3 * (btnW + gap),            // 8 + 156 = 164
+      exec: 8 + 3 * (btnW + gap) + inW + gap, // 164 + 180 + 2 = 346
+      rrf: 8 + 4 * (btnW + gap) + inW + gap,  // 8 + 208 + 180 + 2 = 398
+      note: 8 + 5 * (btnW + gap) + inW + gap, // 8 + 260 + 180 + 2 = 450
+      vs: 8 + 6 * (btnW + gap) + inW + gap    // 8 + 312 + 180 + 2 = 502
     };
 
     const input = document.createElement('input');
@@ -445,11 +460,13 @@
     };
 
     const btnSave = makeBtn('Save ↗', lefts.save);
+    const btnDiff = makeBtn('Diff ⧉', lefts.diff);
     const btnRun  = makeBtn('Run ▶', lefts.run);
     const btnExec = makeBtn('Exec', lefts.exec);
     const btnRrf  = makeBtn('Rrfsh', lefts.rrf);
-    const btnNote = makeBtn('Notepad', lefts.note);
-    const btnVS   = makeBtn('VStudio', lefts.vs);
+    const btnNote = makeBtn('NtPad', lefts.note);
+    const btnVS   = makeBtn('VStdio', lefts.vs);
+
 
     btnSave.onclick = e => {
       e.stopPropagation();
@@ -502,6 +519,7 @@
       if (!p) return toast('No path', '#ef4444');
       openEditor('code', p);
     };
+    btnDiff.onclick = () => window.patchModule.applyDiff(pre);
   }
 
   function inferCommand(path) {
