@@ -10,7 +10,7 @@
 
 ![image](https://github.com/user-attachments/assets/ebc5672a-59d6-460f-ac02-c4f49e615f23)
 
-A browser extension that empowers ChatGPT with true local project management: save, apply diff!, run, edit, and reload files on your machine directly from the chat interface include a Wowrkspace commander for quick insert files into thte text area with file path and name meta-data.
+A browser extension that empowers ChatGPT with true local project management: save, generate a diff and view in-line, apply partial line diffs, , run, edit, apply ChatGPT genned diffs, and reload files on your machine directly from the chat interface include a Wowrkspace commander for quick insert files into thte text area with file path and name meta-data.
 
 ---
 
@@ -60,6 +60,8 @@ chatgpt-Local-Files-Server/
 
 ## 🔍 Overview
 
+⚠️ Caution: While extensive testing was conducted, this is a rapid AI genned codebase. Future chatgpt UI changes could easily cause breaking or unexpected changes. Always take care to protect critical files and work.
+
 This tool bridges ChatGPT with your local file system and terminal:
 
 - `path:` comments in code blocks map files to disk locations
@@ -71,6 +73,13 @@ This tool bridges ChatGPT with your local file system and terminal:
 - Draggable File Commander for dumping files into chat with one-click with context!!!
 - Adds download link to path for Canvas 'docs' too
 
+## 🔍 Working Tips
+
+- Refresh will refresh the file and save contents. Sometimes DOM delay requires refresh. Always have Studio up for verification
+- View diffs incredibly powerful. Line diffs appear to work but caution is warranted. Chunks section is planned for removal.
+- ChaGPT genned sounded great but ChatGPT rarely generates perfect diffs. Likely should be removed in future update.
+- Sometimes can be slight delay on reload file from server-- if making many file operations quickly give a second to ensure the write operations have complete.
+- It works best to instruct ChatGPT to never use canvas if you want to use the full functionality. Canvas also seems to hurt model coding performance.
 ---
 
 ## ⚙️ Technical Details
@@ -97,7 +106,7 @@ Supported/Tested Windows Only
 
 ## 🧩 UI Buttons
 
-- `Save ↗`: Write file to disk
+- `Save ↗`: Write file to disk (backups are automatically generated)
 - `Run ▶`: Execute code via agent
 - `Exec`: Run PowerShell directly
 - `Rrfsh`: Reload file from code block, if code block not complete mutex could fail
@@ -135,6 +144,8 @@ You can toggle this behavior by editing:
 ```js
 const ENABLE_AUTO_INSERT = true; // in content.js
 ```
+
+
 
 ---
 
