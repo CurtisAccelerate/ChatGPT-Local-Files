@@ -4,15 +4,14 @@
 ![image](https://github.com/user-attachments/assets/3734ebe6-f929-429c-9534-c447cb4a59d8)
 
 # Diff Viewer
-![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 ![image](https://github.com/user-attachments/assets/43511b37-feee-46bb-b531-a7ea1fbe478f)
-
-# Save button for Canvas
 ![image](https://github.com/user-attachments/assets/d4c0c5e3-42fc-4e53-9c30-61f17ef9dd49)
 
 # Workspace Commander / Local File Explorer
-
 ![image](https://github.com/user-attachments/assets/ebc5672a-59d6-460f-ac02-c4f49e615f23)
+
+# Save Button (with path) for Canvas
+![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 
 A browser extension that empowers ChatGPT with true local project management: save, generate a diff and view in-line, apply partial line diffs, , run, edit, apply ChatGPT genned diffs, and reload files on your machine directly from the chat interface include a Wowrkspace commander for quick insert files into thte text area with file path and name meta-data.
 
