@@ -1,7 +1,7 @@
 ## ChatGPT-Local-Files by Curtis White
 
 # Action Buttons
-![image](https://github.com/user-attachments/assets/349ec862-b7c4-4e3b-a8c7-bbb722529281)
+![image](https://github.com/user-attachments/assets/3734ebe6-f929-429c-9534-c447cb4a59d8)
 
 ![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
 
