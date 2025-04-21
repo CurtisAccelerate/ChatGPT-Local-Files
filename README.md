@@ -34,6 +34,8 @@ python chatgpt-local-server.py
 
 ### 2. Import the Browser Extension (Chrome/Edge)
 
+New-- you must build with npm run build:extension
+
 1. Open `chrome://extensions`
 2. Enable **Developer Mode**
 3. Click **Load unpacked**
@@ -107,9 +109,10 @@ Supported/Tested Windows Only
 ## 🧩 UI Buttons
 
 - `Save ↗`: Write file to disk (backups are automatically generated)
+- `View Diff`: Open diff viewer for changed file and file on disk. It is also possible to apply line-level selection.
 - `Run ▶`: Execute code via agent
 - `Exec`: Run PowerShell directly
-- `Rrfsh`: Reload file from code block, if code block not complete mutex could fail
+- `Rrfsh`: Reload file & path from code block, if code block not complete mutex could fail. Sometimes events/doms cause contents not to load. ALWAYS have editor up side-by-side to verify.
 - `Notepad`: Open file in Notepad
 - `VStudio`: Open file in VS Code
 
