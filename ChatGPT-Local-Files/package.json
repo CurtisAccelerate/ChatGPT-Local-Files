@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "build:extension": "rollup -c"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^2.79.2"
+  },
+  "dependencies": {
+    "mergely": "^5.3.6"
+  }
+}
