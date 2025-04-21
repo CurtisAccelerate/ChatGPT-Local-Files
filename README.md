@@ -1,4 +1,4 @@
-## ChatGPT-Local-Files by Curtis White
+## ChatGPT-Local-Files / ChatGPT Workspace Commander by Curtis White
 
 # Action Buttons
 ![image](https://github.com/user-attachments/assets/3734ebe6-f929-429c-9534-c447cb4a59d8)
