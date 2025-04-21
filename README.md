@@ -2,8 +2,11 @@
 
 # Action Buttons
 ![image](https://github.com/user-attachments/assets/3734ebe6-f929-429c-9534-c447cb4a59d8)
+![image](https://github.com/user-attachments/assets/d4c0c5e3-42fc-4e53-9c30-61f17ef9dd49)
 
 ![image](https://github.com/user-attachments/assets/9ab68d20-e994-4a89-afb5-ee2e6908576c)
+![image](https://github.com/user-attachments/assets/43511b37-feee-46bb-b531-a7ea1fbe478f)
+
 
 
 # Workspace Commander / Local File Explorer
