@@ -26,7 +26,7 @@ Challenges of LLM are solve tasks of:
 
 Most AI code editors are focused on LOW ORCHESTRATION (high context) AI-coding. While ChatGPT is high orchestration (low context).
 
-This project aimes to bridge the gap and works excellent side-by-side Visual Studio by creating a HIGH orchestration HIGH context environment.
+This project aimes to bridge the gap and works excellent side-by-side Visual Studio (or Cursor) by creating a HIGH orchestration HIGH context environment.
 
 ---
 
