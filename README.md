@@ -15,6 +15,19 @@
 
 A browser extension that empowers ChatGPT with true local project management: save, generate a diff and view in-line, apply partial line diffs, , run, edit, apply ChatGPT genned diffs, and reload files on your machine directly from the chat interface include a Wowrkspace commander for quick insert files into thte text area with file path and name meta-data.
 
+Challenges of LLM are solve tasks of:
+
+- Orchestration
+- Context
+- State management
+- Containment
+- Agency/automation
+- Ground-truthing
+
+Most AI code editors are focused on LOW ORCHESTRATION (high context) AI-coding. While ChatGPT is high orchestration (low context).
+
+This project aimes to bridge the gap and works excellent side-by-side Visual Studio by creating a HIGH orchestration HIGH context environment.
+
 ---
 
 ## 🚀 Quickstart
