@@ -74,6 +74,10 @@ chatgpt-Local-Files-Server/
 └── Work/                        # 🔹 Code files are saved here (relative paths!)
 ```
 
+## Pro Tip: 
+Add a custom md (prompt.md/memory.md) for each project with your custom instructions then just click-it into chat!
+
+
 ---
 
 ## 🔍 Overview
