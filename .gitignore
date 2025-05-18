@@ -1,0 +1,15 @@
+# Git ignore file for ChatGPT-Local-Files
+
+# Ignore history folder
+.history/
+
+# Dependency directories
+node_modules/
+
+# IDE folders
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db 
