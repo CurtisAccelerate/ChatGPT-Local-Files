@@ -25,18 +25,23 @@ else:
 WORK_ROOTS = [pathlib.Path(p).expanduser().resolve()
               for p in _cfg.get("workspace", {}).get("roots", ["Work"])]
 
+# Create the root directories if they don't exist
 for root in WORK_ROOTS:
     root.mkdir(parents=True, exist_ok=True)
 
-WORK_PATH = WORK_ROOTS[0]
-TARGET_PATH = str(WORK_PATH / "work.py")
-if not os.path.exists(TARGET_PATH):
-    open(TARGET_PATH, "w", encoding="utf-8").close()
-
 # ── Python exec environment ─────────────────────────────
 exec_globals: dict[str, Any] = {}
-with open(TARGET_PATH, 'r', encoding='utf-8') as f:
-    exec(f.read(), exec_globals)
+
+# Load existing code from work.py if it exists in any of the roots
+for root in WORK_ROOTS:
+    work_file = root / "work.py"
+    if work_file.exists():
+        try:
+            with open(work_file, 'r', encoding='utf-8') as f:
+                exec(f.read(), exec_globals)
+            break  # Successfully loaded a work.py file
+        except Exception as e:
+            print(f"Error loading {work_file}: {e}")
 
 def _run_python(code: str) -> str:
     buf = io.StringIO()
@@ -51,14 +56,23 @@ def _run_python(code: str) -> str:
             return f"❌ {e}"
 
 def execute_code(code: str) -> dict:
-    with open(TARGET_PATH, 'a', encoding='utf-8') as f:
-        f.write("\n# User code\n" + textwrap.dedent(code) + "\n")
+    # Find or create a work.py file in one of the work roots
+    for root in WORK_ROOTS:
+        target_path = root / "work.py"
+        if target_path.exists() or not any(r / "work.py" for r in WORK_ROOTS):
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            if not target_path.exists():
+                target_path.touch()
+            with open(target_path, 'a', encoding='utf-8') as f:
+                f.write("\n# User code\n" + textwrap.dedent(code) + "\n")
+            break
+    
     result = _run_python(code)
     return {"result": result}
 
 def execute_powershell(cmd: str, cwd: Optional[str] = None, timeout: int = 15) -> dict:
     shell = "pwsh" if shutil.which("pwsh") else "powershell"
-    target = WORK_PATH
+    target = WORK_ROOTS[0]  # Default to first root
     if cwd:
         try:
             target, _ = _resolve_inside_work(cwd)
@@ -126,11 +140,20 @@ def server_status() -> dict:
 
 def _resolve_inside_work(rel_path: str) -> Tuple[pathlib.Path, pathlib.Path]:
     rel = pathlib.Path(rel_path).expanduser()
+    
+    # Check if this is already an absolute path that starts with one of our roots
+    if rel.is_absolute():
+        for base in WORK_ROOTS:
+            if str(rel).startswith(str(base)):
+                return rel, base
+    
+    # Otherwise, try to resolve it relative to each root
     for base in WORK_ROOTS:
         dst = (base / rel).resolve()
         if str(dst).startswith(str(base)):
             return dst, base
-    raise ValueError("Path escape")
+            
+    raise ValueError(f"Path escape: {rel_path} is not within any configured workspace root")
 
 def api_list_dir():
     data = request.get_json(force=True)

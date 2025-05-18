@@ -1,0 +1,17 @@
+# Configuration for ChatGPT-Local-Files Server
+# TEMPLATE CONFIG - Copy to config.toml and customize for your environment
+[workspace]
+# Specify one or more root directories for file operations
+# You can use:
+#  - Relative paths (relative to the server directory): "Work", "Projects"
+#  - Absolute paths: "C:\\Users\\MyName\\Projects", "/home/user/projects"
+#  - Home directory with ~: "~/projects"
+# 
+# Examples:
+# roots = ["Work"]                              # Single relative directory
+# roots = ["C:\\MyWork", "D:\\Projects"]        # Multiple absolute Windows paths
+# roots = ["/home/user/projects", "~/code"]     # Linux/Mac paths
+# 
+# The first path in the list is used as the default working directory
+
+roots = ["Work"]  # Default relative path - works out of the box 
