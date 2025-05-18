@@ -1,0 +1,3 @@
+Flask
+Flask-Cors
+tomli; python_version < "3.11"

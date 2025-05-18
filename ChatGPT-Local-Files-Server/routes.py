@@ -8,17 +8,30 @@ import json
 import datetime
 import pathlib
 from contextlib import redirect_stdout
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 from flask import request, jsonify
+import tomllib
 
 # ── Directory configuration ─────────────────────────────
-WORK_DIR = "Work"
-TARGET_PATH = os.path.join(WORK_DIR, "work.py")
-WORK_PATH = pathlib.Path(WORK_DIR).resolve()
+CONFIG_FILE = pathlib.Path(__file__).with_name("config.toml")
+DEFAULT_CONFIG = {"workspace": {"roots": ["Work"]}}
 
-os.makedirs(WORK_DIR, exist_ok=True)
+if CONFIG_FILE.exists():
+    with open(CONFIG_FILE, "rb") as f:
+        _cfg = tomllib.load(f)
+else:
+    _cfg = DEFAULT_CONFIG
+
+WORK_ROOTS = [pathlib.Path(p).expanduser().resolve()
+              for p in _cfg.get("workspace", {}).get("roots", ["Work"])]
+
+for root in WORK_ROOTS:
+    root.mkdir(parents=True, exist_ok=True)
+
+WORK_PATH = WORK_ROOTS[0]
+TARGET_PATH = str(WORK_PATH / "work.py")
 if not os.path.exists(TARGET_PATH):
-    open(TARGET_PATH, 'w', encoding='utf-8').close()
+    open(TARGET_PATH, "w", encoding="utf-8").close()
 
 # ── Python exec environment ─────────────────────────────
 exec_globals: dict[str, Any] = {}
@@ -47,12 +60,10 @@ def execute_powershell(cmd: str, cwd: Optional[str] = None, timeout: int = 15) -
     shell = "pwsh" if shutil.which("pwsh") else "powershell"
     target = WORK_PATH
     if cwd:
-        rel = pathlib.Path(cwd)
-        if rel.is_absolute() or ".." in rel.parts:
-            return {"stdout": "", "stderr": f"Invalid prefix path: {cwd}", "code": -1}
-        target = (WORK_PATH / rel).resolve()
-        if not str(target).startswith(str(WORK_PATH)):
-            return {"stdout": "", "stderr": f"Path escape: {cwd}", "code": -1}
+        try:
+            target, _ = _resolve_inside_work(cwd)
+        except ValueError as e:
+            return {"stdout": "", "stderr": str(e), "code": -1}
     if not target.is_dir():
         return {"stdout": "", "stderr": f"Directory missing: {target}", "code": -1}
     try:
@@ -86,9 +97,10 @@ def execute_powershell_stateful(cmd: str, timeout: int = 15) -> dict:
 def api_save_file():
     data = request.get_json(force=True)
     rel = pathlib.Path(data.get('path', '')).expanduser()
-    dst = (WORK_PATH / rel).resolve()
-    if not str(dst).startswith(str(WORK_PATH)):
-        return jsonify(ok=False, error="Path escape"), 400
+    try:
+        dst, base = _resolve_inside_work(rel)
+    except ValueError as e:
+        return jsonify(ok=False, error=str(e)), 400
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         # Create .baks directory in the same directory as the file
@@ -99,7 +111,7 @@ def api_save_file():
         shutil.copy2(dst, bak)
     with open(dst, 'w', encoding='utf-8') as f:
         f.write(data.get('content', ''))
-    return jsonify(ok=True, saved=str(dst.relative_to(WORK_PATH)))
+    return jsonify(ok=True, saved=str(dst.relative_to(base)))
 
 def api_run_command():
     data = request.get_json(force=True)
@@ -112,18 +124,19 @@ def server_status() -> dict:
 # NEW: directory & file helpers
 # ─────────────────────────────────────────────────────────
 
-def _resolve_inside_work(rel_path: str) -> pathlib.Path:
+def _resolve_inside_work(rel_path: str) -> Tuple[pathlib.Path, pathlib.Path]:
     rel = pathlib.Path(rel_path).expanduser()
-    dst = (WORK_PATH / rel).resolve()
-    if not str(dst).startswith(str(WORK_PATH)):
-        raise ValueError("Path escape")
-    return dst
+    for base in WORK_ROOTS:
+        dst = (base / rel).resolve()
+        if str(dst).startswith(str(base)):
+            return dst, base
+    raise ValueError("Path escape")
 
 def api_list_dir():
     data = request.get_json(force=True)
     print(f"[DEBUG] api_list_dir payload: {data}")
     try:
-        tgt = _resolve_inside_work(data.get("path", "."))
+        tgt, base = _resolve_inside_work(data.get("path", "."))
         if not tgt.exists():
             return jsonify(ok=False, error="Not found"), 404
         if tgt.is_file():
@@ -139,7 +152,7 @@ def api_list_dir():
 .isoformat(timespec="seconds")
             })
         out.sort(key=lambda x: (not x["is_dir"], x["name"].lower()))
-        return jsonify(ok=True, path=str(tgt.relative_to(WORK_PATH)), entries=out)
+        return jsonify(ok=True, path=str(tgt.relative_to(base)), entries=out)
     except ValueError as e:
         print(f"[DEBUG] api_list_dir error: {e}")
         return jsonify(ok=False, error=str(e)), 400
@@ -148,14 +161,14 @@ def api_open_file():
     data = request.get_json(force=True)
     print(f"[DEBUG] api_open_file payload: {data}")
     try:
-        tgt = _resolve_inside_work(data.get("path", ""))
+        tgt, base = _resolve_inside_work(data.get("path", ""))
         if not tgt.exists():
             return jsonify(ok=False, error="Not found"), 404
         if tgt.is_dir():
             return jsonify(ok=False, error="Is a directory"), 400
         with open(tgt, "r", encoding="utf-8") as f:
             content = f.read()
-        return jsonify(ok=True, path=str(tgt.relative_to(WORK_PATH)), content=content)
+        return jsonify(ok=True, path=str(tgt.relative_to(base)), content=content)
     except UnicodeDecodeError:
         print("[DEBUG] api_open_file decode error")
         return jsonify(ok=False, error="Binary or non-UTF8 file"), 415
@@ -168,7 +181,7 @@ def api_peek_file():
     print(f"[DEBUG] api_peek_file payload: {data}")
     limit = int(data.get("limit", 50))
     try:
-        tgt = _resolve_inside_work(data.get("path", ""))
+        tgt, base = _resolve_inside_work(data.get("path", ""))
         if tgt.is_dir():
             return jsonify(ok=False, error="Is a directory"), 400
         lines = []
@@ -179,7 +192,7 @@ def api_peek_file():
                     break
                 lines.append(line)
         preview = "".join(lines)
-        return jsonify(ok=True, path=str(tgt.relative_to(WORK_PATH)), preview=preview, lines=len(lines))
+        return jsonify(ok=True, path=str(tgt.relative_to(base)), preview=preview, lines=len(lines))
     except UnicodeDecodeError:
         print("[DEBUG] api_peek_file decode/empty error")
         return jsonify(ok=False, error="Binary, non-UTF8, or empty fil\

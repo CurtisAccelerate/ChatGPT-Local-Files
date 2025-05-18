@@ -43,8 +43,15 @@ python chatgpt-local-server.py
 
 > The server will start at: `http://127.0.0.1:5000`
 
-📂 **All code is saved relative to this folder:**  
-`ChatGPT-Local-Files-Server/Work/`
+📂 **Configure your workspace paths** by editing `config.toml` in
+`ChatGPT-Local-Files-Server/`. By default it contains:
+
+```toml
+[workspace]
+roots = ["Work"]
+```
+
+Files are saved relative to the first entry in `roots`.
 
 ---
 
@@ -70,8 +77,9 @@ ChatGPT-Local-Files/
 chatgpt-Local-Files-Server/
 ├── server.py                    # Flask server entry
 ├── routes.py                    # Request handling logic
+├── config.toml                  # Workspace directories
 ├── requirements.txt             # Dependencies
-└── Work/                        # 🔹 Code files are saved here (relative paths!)
+└── <your workspace dirs>
 ```
 
 ## Pro Tip: 
@@ -148,7 +156,7 @@ Supported/Tested Windows Only
 - **Prefix path** stored in `localStorage` (`cb_save_prefix`)
 - **Command history** stored in `cb_cmd_history`
   - Use `↑` / `↓` arrow keys in the command input field to cycle through history
-- Use the “Prefix 📂” button to change your root (default: `Work/`)
+- Use the “Prefix 📂” button to change your root (defaults are read from `config.toml`)
 
 
 
@@ -174,8 +182,8 @@ const ENABLE_AUTO_INSERT = true; // in content.js
 
 ## ✏️ Prompt Format Guide
 
-### Always begin code blocks with a `path:` header on **line 1**  
-This tells the extension where to save the file, relative to `Work/`.
+### Always begin code blocks with a `path:` header on **line 1**
+This tells the extension where to save the file relative to your configured workspace root.
 
 ### Comment Syntax by Language:
 
